@@ -1,8 +1,8 @@
 import express from 'express'
 import cors from 'cors'
 
-app.use(express.json())
 const app = express()
+app.use(express.json())
 
 app.use(cors())
 app.use(express.json())
@@ -47,7 +47,7 @@ app.get('/contacts', (req, res) => {
 
 
 app.post('/contacts', (req, res) => {
-  const { name, email, phone, position, company } = req.body 
+   const { name, email, phone, position, company } = req.body
 
   const newContact = {
     id: Date.now(),
@@ -64,6 +64,32 @@ app.post('/contacts', (req, res) => {
   res.json(newContact) 
   console.log(req.body)
 })
+
+
+let deals = []
+
+app.get('/deals', (req, res) => {
+  res.json(deals)
+})
+
+app.post('/deals', (req, res) => {
+  const { title, contact, amount, company } = req.body 
+
+  const newDeals = {
+    id: Date.now(),
+    title,
+    contact,
+    company,
+    amount,
+    status: 'new'
+  }
+
+  deals.push(newDeals) 
+
+  res.json(newDeals) 
+  console.log(req.body)
+})
+
 
 
 app.listen(3000, () => {

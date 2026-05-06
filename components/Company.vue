@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
 
@@ -13,47 +13,42 @@ const search = ref('')
 const contacts = ref([
   {
     id: 1,
-    name: 'Иван Иванов',
+    name: 'KaspiTech Solutions',
     email: 'ivan@mail.com',
     phone: '+77771234567',
     position: 'Менеджер',
-    company: 'Kaspi',
     avatar: '/favicon.svg'
   },
   {
     id: 2,
-    name: 'Алексей Смирнов',
+    name: 'AlmaSoft Group',
     email: 'alex@mail.com',
     phone: '+77015552211',
-    position: 'Разработчик',
-    company: 'Yandex',
+    position: 'Разработчик',    
     avatar: '/favicon.svg'
   },
   {
     id: 3,
-    name: 'Мария Ким',
+    name: 'AirAstana',
     email: 'maria@mail.com',
     phone: '+77058889900',
     position: 'Дизайнер',
-    company: 'AirAstana',
     avatar: '/favicon.svg'
   },
   {
     id: 4,
-    name: 'Данияр Нуров',
+    name: 'Kolesa',
     email: 'daniyar@mail.com',
     phone: '+77473334455',
     position: 'Аналитик',
-    company: 'Kolesa',
     avatar: '/favicon.svg'
   },
   {
     id: 5,
-    name: 'Алина Сейтова',
+    name: 'Freedom',
     email: 'alina@mail.com',
     phone: '+77001112233',
     position: 'HR',
-    company: 'Freedom',
     avatar: '/favicon.svg'
   }
 ])
@@ -105,17 +100,16 @@ const contactSearch = computed(() => {
 
 <template>
   <div class="container">
-    <h2>Контактные лица и сотрудники</h2>
+    <h2>Группы компаний</h2>
 
     <button popovertarget="my-popover">Добавить контакт</button>
   </div>
 
     <div id="my-popover" popover class="modal">
-        <input v-model="newContact" type="text" placeholder="Имя контакта..." />
+        <input v-model="newContact" type="text" placeholder="Название компании..." />
         <input v-model="newPhone" type="text" placeholder="Номер телефона..." />
         <input v-model="newEmail" type="text" placeholder="Почта..." />
         <input v-model="newPosition" type="text" placeholder="Должность..." />
-        <input v-model="newCompany" type="text" placeholder="Компания..." />
         <button @click="createContact" type="button">Добавить</button>
     </div>
 
@@ -128,11 +122,10 @@ const contactSearch = computed(() => {
     <div class="contacts-table">
       <div class="contacts-header">
         <div></div>
-        <div>ФИО</div>
+        <div>Название компании</div>
         <div>Номер телефона</div>
-        <div>E-mail</div>
+        <div>e-mail</div>
         <div>Должность</div>
-        <div>Компания</div>
 
       </div>
 

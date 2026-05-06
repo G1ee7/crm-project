@@ -18,7 +18,7 @@ import CrmMenu from '../components/CrmMenu.vue'
 
 <style scoped>
 body {
-  font-family: arial, sans-serif;
+  font-family: roboto, sans-serif;
 }
 
 .app-layout {

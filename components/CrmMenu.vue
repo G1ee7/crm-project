@@ -2,8 +2,8 @@
 const menuItems = [
   { title: 'Профиль', path: '/profile' },
   { title: 'Контакты', path: '/dashboard' },
-  { title: 'Компании', path: '/users' },
-  { title: 'Сделки', path: '/settings' },
+  { title: 'Компании', path: '/company' },
+  { title: 'Сделки', path: '/deals' },
 ]
 </script>
 
@@ -23,6 +23,7 @@ const menuItems = [
 
 <style scoped>
 .sidebar {
+  font-family: roboto, sans-serif;
   width: 220px;
   min-height: 100vh;
   background: #073954;
