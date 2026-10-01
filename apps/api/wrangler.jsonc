@@ -10,8 +10,7 @@
   "d1_databases": [{
     "binding": "DB",
     "database_name": "warehouse-demo",
-    "database_id": "00000000-0000-0000-0000-000000000000",
+    "database_id": "a181bc83-e2b3-4eaa-8f1b-6bf5ac73d796",
     "migrations_dir": "migrations"
-  }],
-  "r2_buckets": [{ "binding": "FILES", "bucket_name": "warehouse-demo-files" }]
+  }]
 }
