@@ -19,8 +19,8 @@ movementRoutes.get('/', async c => {
   if (product) validId(product)
   if (documentId) validId(documentId)
   if (warehouse && !/^[a-zA-Z0-9-]{1,80}$/.test(warehouse)) throw new ApiError('INVALID_ID', 'Некорректный склад')
-  if (documentType && !['receipts', 'issues', 'writeoffs', 'transfers'].includes(documentType)) throw new ApiError('INVALID_DOCUMENT_TYPE', 'Некорректный тип документа')
-  if (type && !['RECEIPT', 'ISSUE', 'WRITEOFF', 'TRANSFER_OUT', 'TRANSFER_IN'].includes(type)) throw new ApiError('INVALID_TYPE', 'Некорректный тип операции')
+  if (documentType && !['receipts', 'issues', 'writeoffs', 'transfers', 'sales', 'sale_returns'].includes(documentType)) throw new ApiError('INVALID_DOCUMENT_TYPE', 'Некорректный тип документа')
+  if (type && !['RECEIPT', 'ISSUE', 'WRITEOFF', 'TRANSFER_OUT', 'TRANSFER_IN', 'SALE', 'SALE_RETURN'].includes(type)) throw new ApiError('INVALID_TYPE', 'Некорректный тип операции')
   if (actor && !/^[a-zA-Z0-9-]{1,80}$/.test(actor)) throw new ApiError('INVALID_ACTOR', 'Некорректный сотрудник')
   if ((from && !/^\d{4}-\d{2}-\d{2}$/.test(from)) || (to && !/^\d{4}-\d{2}-\d{2}$/.test(to))) throw new ApiError('INVALID_PERIOD', 'Некорректный период')
   const conditions = ['m.organization_id = ?']
@@ -37,6 +37,6 @@ movementRoutes.get('/', async c => {
   const where = conditions.join(' AND ')
   const joins = 'JOIN products p ON p.organization_id = m.organization_id AND p.id = m.product_id JOIN warehouses w ON w.organization_id = m.organization_id AND w.id = m.warehouse_id LEFT JOIN users u ON u.organization_id = m.organization_id AND u.id = m.created_by'
   const count = await c.env.DB.prepare(`SELECT count(*) total FROM stock_movements m ${joins} WHERE ${where}`).bind(...args).first<{ total: number }>()
-  const rows = await c.env.DB.prepare(`SELECT m.id, m.document_type documentType, m.document_id documentId, m.reference_id documentNumber, m.product_id productId, p.name productName, p.sku, m.warehouse_id warehouseId, w.name warehouseName, m.type, m.quantity_delta quantityDelta, m.unit_cost_minor unitCostMinor, m.note, m.created_by createdBy, u.name actorName, m.created_at createdAt FROM stock_movements m ${joins} WHERE ${where} ORDER BY m.created_at DESC, m.id DESC LIMIT ? OFFSET ?`).bind(...args, pageSize, (page - 1) * pageSize).all()
+  const rows = await c.env.DB.prepare(`SELECT m.id, m.document_type documentType, m.document_id documentId, m.reference_id documentNumber, m.product_id productId, p.name productName, p.sku, m.warehouse_id warehouseId, w.name warehouseName, m.type, m.quantity_delta quantityDelta, m.unit_cost_minor unitCostMinor, m.value_delta_minor valueDeltaMinor, m.note, m.created_by createdBy, u.name actorName, m.created_at createdAt FROM stock_movements m ${joins} WHERE ${where} ORDER BY m.created_at DESC, m.id DESC LIMIT ? OFFSET ?`).bind(...args, pageSize, (page - 1) * pageSize).all()
   return c.json({ items: rows.results, total: count?.total ?? 0, page, pageSize })
 })

@@ -4,8 +4,8 @@ import type { PageResult, StockMovement, WarehouseRecord } from '@warehouse/type
 import { Badge, DataState, EmptyState, Input, PageHeader, Pagination, SearchInput, Select, Table } from '../../components/ui'
 import { api } from '../../lib/api'
 
-const labels: Record<string, string> = { RECEIPT: 'Приход', ISSUE: 'Расход', WRITEOFF: 'Списание', TRANSFER_OUT: 'Перемещение · расход', TRANSFER_IN: 'Перемещение · приход' }
-const kinds = [{ value: 'all', label: 'Все документы' }, { value: 'receipts', label: 'Приходы' }, { value: 'issues', label: 'Расходы' }, { value: 'writeoffs', label: 'Списания' }, { value: 'transfers', label: 'Перемещения' }]
+const labels: Record<string, string> = { RECEIPT: 'Приход', ISSUE: 'Расход', WRITEOFF: 'Списание', TRANSFER_OUT: 'Перемещение · расход', TRANSFER_IN: 'Перемещение · приход', SALE: 'Продажа', SALE_RETURN: 'Возврат продажи' }
+const kinds = [{ value: 'all', label: 'Все документы' }, { value: 'receipts', label: 'Приходы' }, { value: 'issues', label: 'Расходы' }, { value: 'writeoffs', label: 'Списания' }, { value: 'transfers', label: 'Перемещения' }, { value: 'sales', label: 'Продажи' }, { value: 'sale_returns', label: 'Возвраты' }]
 
 export default function MovementsPage() {
   const [params] = useSearchParams()

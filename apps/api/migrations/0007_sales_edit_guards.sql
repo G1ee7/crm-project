@@ -1,0 +1,3 @@
+CREATE TRIGGER audit_sale_edit_guard BEFORE INSERT ON audit_log WHEN NEW.document_type='sales' AND NEW.action='UPDATE' AND NOT EXISTS(SELECT 1 FROM sales WHERE organization_id=NEW.organization_id AND id=NEW.document_id AND status='DRAFT' AND revision=CAST(NEW.details AS INTEGER)) BEGIN SELECT RAISE(ABORT,'DOCUMENT_CHANGED'); END;
+--> statement-breakpoint
+CREATE TRIGGER audit_sale_return_edit_guard BEFORE INSERT ON audit_log WHEN NEW.document_type='sale_returns' AND NEW.action='UPDATE' AND NOT EXISTS(SELECT 1 FROM sale_returns WHERE organization_id=NEW.organization_id AND id=NEW.document_id AND status='DRAFT' AND revision=CAST(NEW.details AS INTEGER)) BEGIN SELECT RAISE(ABORT,'DOCUMENT_CHANGED'); END;

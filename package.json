@@ -12,7 +12,7 @@
     "deploy": "npm run build -w @warehouse/web && npm run deploy -w @warehouse/api",
     "db:generate": "npm run db:generate -w @warehouse/db",
     "db:migrate:local": "npm run db:migrate:local -w @warehouse/api",
-    "test:api": "node scripts/verify-catalog.mjs && node scripts/verify-documents.mjs",
+    "test:api": "node scripts/verify-catalog.mjs && node scripts/verify-documents.mjs && node scripts/verify-sales.mjs",
     "measure:api": "node scripts/measure-api.mjs",
     "check:stock": "node scripts/check-stock-integrity.mjs"
   },

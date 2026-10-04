@@ -12,6 +12,8 @@ const InventoryPage = lazy(() => import('../features/inventory/InventoryPage'))
 const SettingsPage = lazy(() => import('../features/settings/SettingsPage'))
 const DocumentsPage = lazy(() => import('../features/documents/DocumentsPage'))
 const MovementsPage = lazy(() => import('../features/movements/MovementsPage'))
+const SalesPage = lazy(() => import('../features/sales/SalesPage'))
+const CustomersPage = lazy(() => import('../features/customers/CustomersPage'))
 
 const WarehouseContext = createContext<{ warehouseId: string; setWarehouseId: (id: string) => void }>({ warehouseId: 'all', setWarehouseId: () => {} })
 export const useCurrentWarehouse = () => useContext(WarehouseContext)
@@ -29,7 +31,8 @@ const warehouseNav = [
 ]
 const secondaryNav = [
   { label: 'Продажи', to: '/sales', icon: Box },
-  { label: 'Контрагенты', to: '/counterparties', icon: Users },
+  { label: 'Возвраты', to: '/sale-returns', icon: Truck },
+  { label: 'Клиенты', to: '/counterparties', icon: Users },
   { label: 'Движения', to: '/movements', icon: ClipboardList },
   { label: 'Отчёты', to: '/reports', icon: ChartNoAxesCombined },
 ]
@@ -67,14 +70,14 @@ function ComingSoon() {
   const location = useLocation()
   const all = [...warehouseNav, ...secondaryNav]
   const label = all.find(item => item.to === location.pathname)?.label ?? 'Раздел'
-  return <div className="coming-soon"><div className="coming-soon-icon"><Truck size={23} /></div><span className="eyebrow">СЛЕДУЮЩИЙ ЭТАП</span><h1>{label}</h1><p>Раздел появится на следующем этапе разработки. Сейчас доступен фундамент интерфейса, товары и остатки.</p><Link to="/" className="ui-button ui-button--primary">Вернуться на главную</Link></div>
+  return <div className="coming-soon"><div className="coming-soon-icon"><Truck size={23} /></div><span className="eyebrow">СЛЕДУЮЩИЙ ЭТАП</span><h1>{label}</h1><p>Раздел появится на следующем этапе разработки.</p><Link to="/" className="ui-button ui-button--primary">Вернуться на главную</Link></div>
 }
 
 function AppShell() {
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [warehouseId, setWarehouseId] = useState('all')
-  return <WarehouseContext.Provider value={{ warehouseId, setWarehouseId }}><div className={cn('app-shell', collapsed && 'app-shell--collapsed')}><div className="desktop-sidebar"><Sidebar collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} /></div><Drawer open={mobileOpen} onOpenChange={setMobileOpen} title="Меню"><Sidebar collapsed={false} onToggle={() => {}} onNavigate={() => setMobileOpen(false)} /></Drawer><div className="app-main"><Header onMenu={() => setMobileOpen(true)} /><main className="page-container"><Suspense fallback={<div className="page-loading"><Skeleton className="skeleton-title" /><Skeleton className="skeleton-large" /><Skeleton className="skeleton-large" /></div>}><Routes><Route path="/" element={<DashboardPage />} /><Route path="/products" element={<ProductsPage />} /><Route path="/inventory" element={<InventoryPage />} /><Route path="/receipts" element={<DocumentsPage kind="receipts" />} /><Route path="/issues" element={<DocumentsPage kind="issues" />} /><Route path="/transfers" element={<DocumentsPage kind="transfers" />} /><Route path="/writeoffs" element={<DocumentsPage kind="writeoffs" />} /><Route path="/sales" element={<ComingSoon />} /><Route path="/counterparties" element={<ComingSoon />} /><Route path="/movements" element={<MovementsPage />} /><Route path="/reports" element={<ComingSoon />} /><Route path="/settings" element={<SettingsPage />} /><Route path="*" element={<Navigate to="/" replace />} /></Routes></Suspense></main></div></div></WarehouseContext.Provider>
+  return <WarehouseContext.Provider value={{ warehouseId, setWarehouseId }}><div className={cn('app-shell', collapsed && 'app-shell--collapsed')}><div className="desktop-sidebar"><Sidebar collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} /></div><Drawer open={mobileOpen} onOpenChange={setMobileOpen} title="Меню"><Sidebar collapsed={false} onToggle={() => {}} onNavigate={() => setMobileOpen(false)} /></Drawer><div className="app-main"><Header onMenu={() => setMobileOpen(true)} /><main className="page-container"><Suspense fallback={<div className="page-loading"><Skeleton className="skeleton-title" /><Skeleton className="skeleton-large" /><Skeleton className="skeleton-large" /></div>}><Routes><Route path="/" element={<DashboardPage />} /><Route path="/products" element={<ProductsPage />} /><Route path="/inventory" element={<InventoryPage />} /><Route path="/receipts" element={<DocumentsPage kind="receipts" />} /><Route path="/issues" element={<DocumentsPage kind="issues" />} /><Route path="/transfers" element={<DocumentsPage kind="transfers" />} /><Route path="/writeoffs" element={<DocumentsPage kind="writeoffs" />} /><Route path="/sales" element={<SalesPage />} /><Route path="/sale-returns" element={<SalesPage kind="returns" />} /><Route path="/counterparties" element={<CustomersPage />} /><Route path="/movements" element={<MovementsPage />} /><Route path="/reports" element={<ComingSoon />} /><Route path="/settings" element={<SettingsPage />} /><Route path="*" element={<Navigate to="/" replace />} /></Routes></Suspense></main></div></div></WarehouseContext.Provider>
 }
 
 export function App() { return <ToastProvider><AppShell /></ToastProvider> }

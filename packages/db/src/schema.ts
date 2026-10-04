@@ -92,6 +92,7 @@ export const stockBalances = sqliteTable('stock_balances', {
   warehouseId: text('warehouse_id').notNull(),
   quantity: integer('quantity').notNull().default(0),
   reserved: integer('reserved').notNull().default(0),
+    inventoryValueMinor: integer('inventory_value_minor').notNull().default(0),
   ...timestamps,
 }, (table) => [
   uniqueIndex('balances_org_product_warehouse_uq').on(table.organizationId, table.productId, table.warehouseId),
@@ -105,9 +106,10 @@ export const stockMovements = sqliteTable('stock_movements', {
   organizationId: text('organization_id').notNull().references(() => organizations.id),
   productId: text('product_id').notNull(),
   warehouseId: text('warehouse_id').notNull(),
-  type: text('type', { enum: ['RECEIPT', 'ISSUE', 'WRITEOFF', 'TRANSFER_IN', 'TRANSFER_OUT', 'SALE', 'RETURN', 'ADJUSTMENT'] }).notNull(),
+    type: text('type', { enum: ['RECEIPT', 'ISSUE', 'WRITEOFF', 'TRANSFER_IN', 'TRANSFER_OUT', 'SALE', 'SALE_RETURN', 'ADJUSTMENT'] }).notNull(),
   quantityDelta: integer('quantity_delta').notNull(),
   unitCostMinor: integer('unit_cost_minor'),
+    valueDeltaMinor: integer('value_delta_minor').notNull().default(0),
   documentType: text('document_type'),
   documentId: text('document_id'),
   documentItemId: text('document_item_id'),
@@ -261,3 +263,29 @@ export const auditLog = sqliteTable('audit_log', {
   index('audit_org_doc_idx').on(table.organizationId, table.documentType, table.documentId),
   foreignKey({ columns: [table.organizationId, table.actorId], foreignColumns: [users.organizationId, users.id] }),
 ])
+
+export const customers = sqliteTable('customers', {
+  id: text('id').primaryKey(), organizationId: text('organization_id').notNull().references(() => organizations.id),
+  name: text('name').notNull(), phone: text('phone'), email: text('email'), bin: text('bin'), comment: text('comment'), ...timestamps,
+}, table => [uniqueIndex('customers_org_id_uq').on(table.organizationId, table.id), index('customers_org_name_idx').on(table.organizationId, table.name)])
+
+export const sales = sqliteTable('sales', {
+  ...documentFields(), warehouseId: text('warehouse_id').notNull(), customerId: text('customer_id'),
+  subtotalMinor: integer('subtotal_minor').notNull().default(0), discountMinor: integer('discount_minor').notNull().default(0),
+  totalMinor: integer('total_minor').notNull().default(0), costTotalMinor: integer('cost_total_minor').notNull().default(0), grossProfitMinor: integer('gross_profit_minor').notNull().default(0),
+}, table => [uniqueIndex('sales_org_id_uq').on(table.organizationId, table.id), uniqueIndex('sales_org_number_uq').on(table.organizationId, table.number), index('sales_org_created_idx').on(table.organizationId, table.createdAt), index('sales_org_customer_idx').on(table.organizationId, table.customerId, table.createdAt), foreignKey({ columns: [table.organizationId, table.warehouseId], foreignColumns: [warehouses.organizationId, warehouses.id] }), foreignKey({ columns: [table.organizationId, table.customerId], foreignColumns: [customers.organizationId, customers.id] })])
+
+export const saleItems = sqliteTable('sale_items', {
+  id: text('id').primaryKey(), organizationId: text('organization_id').notNull().references(() => organizations.id),
+  saleId: text('sale_id').notNull(), productId: text('product_id').notNull(), quantity: integer('quantity').notNull(),
+  unitPriceMinor: integer('unit_price_minor').notNull(), discountMinor: integer('discount_minor').notNull().default(0), lineTotalMinor: integer('line_total_minor').notNull().default(0),
+  unitCostSnapshotMinor: integer('unit_cost_snapshot_minor').notNull().default(0), costTotalMinor: integer('cost_total_minor').notNull().default(0), grossProfitMinor: integer('gross_profit_minor').notNull().default(0),
+}, table => [uniqueIndex('sale_items_org_sale_product_uq').on(table.organizationId, table.saleId, table.productId), uniqueIndex('sale_items_org_id_uq').on(table.organizationId, table.id), foreignKey({ columns: [table.organizationId, table.saleId], foreignColumns: [sales.organizationId, sales.id] }), foreignKey({ columns: [table.organizationId, table.productId], foreignColumns: [products.organizationId, products.id] })])
+
+export const saleReturns = sqliteTable('sale_returns', {
+  ...documentFields(), saleId: text('sale_id').notNull(), totalMinor: integer('total_minor').notNull().default(0), costTotalMinor: integer('cost_total_minor').notNull().default(0), grossProfitMinor: integer('gross_profit_minor').notNull().default(0),
+}, table => [uniqueIndex('sale_returns_org_id_uq').on(table.organizationId, table.id), uniqueIndex('sale_returns_org_number_uq').on(table.organizationId, table.number), index('sale_returns_org_sale_idx').on(table.organizationId, table.saleId, table.createdAt), foreignKey({ columns: [table.organizationId, table.saleId], foreignColumns: [sales.organizationId, sales.id] })])
+
+export const saleReturnItems = sqliteTable('sale_return_items', {
+  id: text('id').primaryKey(), organizationId: text('organization_id').notNull().references(() => organizations.id), saleReturnId: text('sale_return_id').notNull(), saleItemId: text('sale_item_id').notNull(), quantity: integer('quantity').notNull(), amountMinor: integer('amount_minor').notNull().default(0), costTotalMinor: integer('cost_total_minor').notNull().default(0), grossProfitMinor: integer('gross_profit_minor').notNull().default(0),
+}, table => [uniqueIndex('sale_return_items_doc_item_uq').on(table.organizationId, table.saleReturnId, table.saleItemId), index('sale_return_items_sale_item_idx').on(table.organizationId, table.saleItemId), foreignKey({ columns: [table.organizationId, table.saleReturnId], foreignColumns: [saleReturns.organizationId, saleReturns.id] }), foreignKey({ columns: [table.organizationId, table.saleItemId], foreignColumns: [saleItems.organizationId, saleItems.id] })])

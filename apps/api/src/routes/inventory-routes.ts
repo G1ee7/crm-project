@@ -6,7 +6,8 @@ export const inventoryRoutes = new Hono<{ Bindings: Bindings }>()
 
 const base = `WITH rows AS (
  SELECT p.id productId, p.name, p.sku, p.category_id categoryId, c.name category,
- w.id warehouseId, w.name warehouseName, b.quantity, b.reserved,
+ w.id warehouseId, w.name warehouseName, b.quantity, b.reserved, b.inventory_value_minor inventoryValueMinor,
+ CASE WHEN b.quantity > 0 THEN (b.inventory_value_minor + b.quantity / 2) / b.quantity ELSE 0 END averageCostMinor,
  b.quantity - b.reserved available, p.minimum_stock minimumStock, p.is_active isActive
  FROM stock_balances b JOIN products p ON p.organization_id = b.organization_id AND p.id = b.product_id
  JOIN warehouses w ON w.organization_id = b.organization_id AND w.id = b.warehouse_id
@@ -27,8 +28,8 @@ inventoryRoutes.get('/', async c => {
   }
   const like = `%${search}%`
   const args = [org, warehouse, warehouse, search, like, like, category, category, onlyLow]
-  const summary = await c.env.DB.prepare(`${base} SELECT count(*) total, coalesce(sum(quantity), 0) quantity, coalesce(sum(reserved), 0) reserved FROM filtered`).bind(...args).first<{total: number; quantity: number; reserved: number}>()
+  const summary = await c.env.DB.prepare(`${base} SELECT count(*) total, coalesce(sum(quantity), 0) quantity, coalesce(sum(reserved), 0) reserved, coalesce(sum(inventoryValueMinor),0) inventoryValueMinor FROM filtered`).bind(...args).first<{total: number; quantity: number; reserved: number; inventoryValueMinor: number}>()
   const result = await c.env.DB.prepare(`${base} SELECT * FROM filtered ORDER BY name, warehouseName LIMIT ? OFFSET ?`).bind(...args, pageSize, (page - 1) * pageSize).all()
   const items = result.results.map(row => ({ ...row, quantity: Number(row.quantity), reserved: Number(row.reserved), available: Number(row.available), minimumStock: Number(row.minimumStock), status: status(!!row.isActive, Number(row.available), Number(row.minimumStock)), isActive: undefined }))
-  return c.json({ items, total: summary?.total ?? 0, page, pageSize, summary: { quantity: summary?.quantity ?? 0, reserved: summary?.reserved ?? 0, available: (summary?.quantity ?? 0) - (summary?.reserved ?? 0) } })
+  return c.json({ items, total: summary?.total ?? 0, page, pageSize, summary: { quantity: summary?.quantity ?? 0, reserved: summary?.reserved ?? 0, available: (summary?.quantity ?? 0) - (summary?.reserved ?? 0), inventoryValueMinor: summary?.inventoryValueMinor ?? 0 } })
 })

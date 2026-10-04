@@ -238,6 +238,23 @@ button:disabled { cursor: not-allowed; opacity: .48; }
 .document-line label { font-size: 12px; }
 .document-totals { display: flex; flex-wrap: wrap; gap: 8px 22px; padding: 12px 0; border-top: 1px solid var(--color-border); color: var(--color-muted); font-size: 12px; }
 .document-totals strong { color: var(--color-text); }
+.sales-tabs { display: flex; gap: 5px; margin: -5px 0 18px; border-bottom: 1px solid var(--color-border); }
+.sales-tabs a { padding: 10px 16px; color: var(--color-muted); font-size: 12px; font-weight: 700; text-decoration: none; }
+.sales-tabs a.active { color: var(--color-blue); border-bottom: 2px solid var(--color-blue); }
+.sales-list { display: grid; }
+.sales-card { display: grid; grid-template-columns: minmax(150px,2fr) minmax(110px,1fr) minmax(110px,1fr) auto; gap: 16px; align-items: center; width: 100%; padding: 18px 23px; border: 0; border-top: 1px solid var(--color-border); background: #fff; text-align: left; cursor: pointer; }
+.sales-card:hover { background: #fbfcff; }
+.sales-card > div { display: grid; gap: 4px; min-width: 0; }
+.sales-card strong { color: var(--color-text); font-size: 12px; overflow-wrap: anywhere; }
+.sales-card span,.sales-card small { color: var(--color-muted); font-size: 11px; }
+.sale-line { display: grid; grid-template-columns: minmax(130px,1fr) 85px 100px 100px 110px auto; gap: 9px; align-items: end; padding: 10px 0; border-bottom: 1px solid var(--color-border); }
+.sale-line strong { align-self: center; overflow-wrap: anywhere; }
+.sale-line small { display: block; margin-top: 3px; color: var(--color-muted); font-size: 10px; font-weight: 500; }
+.sale-line .ui-input { width: 100%; }
+.sale-line-total { align-self: center; font-size: 11px; font-weight: 700; text-align: right; }
+.sales-detail-links { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: flex-end; margin-top: 16px; }
+.chart-empty { padding: 40px 10px; color: var(--color-muted); font-size: 12px; text-align: center; }
+@media (max-width: 700px) { .sales-card { grid-template-columns: 1fr 1fr; padding: 15px; gap: 12px; }.sales-card > div:first-child { grid-column: 1/-1; }.sale-line { grid-template-columns: 1fr 1fr; }.sale-line strong { grid-column: 1/-1; }.sale-line-total { text-align: left; }.sales-form .dialog-actions { flex-wrap: wrap; } }
 .document-filters { display: flex; flex-wrap: wrap; gap: 9px; align-items: end; padding: 0 23px 17px; }
 .document-filters > .ui-input, .document-filters > .ui-select { min-width: 155px; }
 .document-filters > label { display: flex; flex-direction: column; gap: 4px; color: var(--color-muted); font-size: 11px; }

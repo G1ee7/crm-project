@@ -26,6 +26,7 @@ function validateInput(kind: Kind, input: Input) {
   if (kind === 'writeoffs' && !input.reason) throw new ApiError('REASON_REQUIRED', 'Укажите причину списания')
   if (new Set(input.items.map(row => row.productId)).size !== input.items.length) throw new ApiError('DUPLICATE_PRODUCT', 'Товар повторяется в документе')
   if (kind === 'receipts' && input.items.some(row => row.unitCostMinor === undefined)) throw new ApiError('COST_REQUIRED', 'Укажите закупочную цену в тиынах для каждой строки')
+  if (kind === 'receipts' && input.items.some(row => BigInt(row.quantity) * BigInt(row.unitCostMinor ?? 0) > BigInt(Number.MAX_SAFE_INTEGER))) throw new ApiError('COST_TOO_LARGE', 'Сумма строки превышает допустимый предел')
 }
 
 async function validateReferences(db: D1Database, org: string, kind: Kind, input: Input) {
@@ -166,7 +167,16 @@ export function createDocumentRoutes(kind: Kind) {
       const movements = kind === 'transfers'
         ? [{ type: 'TRANSFER_OUT', warehouse: doc.fromWarehouseId!, delta: -Number(row.quantity) }, { type: 'TRANSFER_IN', warehouse: doc.toWarehouseId!, delta: Number(row.quantity) }]
         : [{ type: kind === 'receipts' ? 'RECEIPT' : kind === 'issues' ? 'ISSUE' : 'WRITEOFF', warehouse: doc.warehouseId!, delta: kind === 'receipts' ? Number(row.quantity) : -Number(row.quantity) }]
-      for (const movement of movements) statements.push(db.prepare('INSERT INTO stock_movements (id, organization_id, product_id, warehouse_id, type, quantity_delta, unit_cost_minor, document_type, document_id, document_item_id, reference_id, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').bind(crypto.randomUUID(), org, row.productId, movement.warehouse, movement.type, movement.delta, kind === 'receipts' ? row.unitCostMinor : null, kind, id, row.id, doc.number, 'demo-admin'))
+      for (const movement of movements) {
+        const qty = Math.abs(movement.delta)
+        const averageCost = `COALESCE((SELECT CASE WHEN quantity >= ${qty} AND quantity > 0 THEN (inventory_value_minor / quantity) * ${qty} + ((inventory_value_minor % quantity) * ${qty} + quantity / 2) / quantity ELSE 0 END FROM stock_balances WHERE organization_id = ? AND product_id = ? AND warehouse_id = ?), 0)`
+        const valueSql = movement.type === 'RECEIPT' ? '?' : movement.type === 'TRANSFER_IN'
+          ? 'COALESCE((SELECT -value_delta_minor FROM stock_movements WHERE organization_id = ? AND document_type = ? AND document_id = ? AND document_item_id = ? AND type = ?), 0)'
+          : `-${averageCost}`
+        const valueArgs = movement.type === 'RECEIPT' ? [qty * Number(row.unitCostMinor)] : movement.type === 'TRANSFER_IN'
+          ? [org, kind, id, row.id, 'TRANSFER_OUT'] : [org, row.productId, movement.warehouse]
+        statements.push(db.prepare(`INSERT INTO stock_movements (id, organization_id, product_id, warehouse_id, type, quantity_delta, unit_cost_minor, value_delta_minor, document_type, document_id, document_item_id, reference_id, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ${valueSql}, ?, ?, ?, ?, ?)`).bind(crypto.randomUUID(), org, row.productId, movement.warehouse, movement.type, movement.delta, kind === 'receipts' ? row.unitCostMinor : null, ...valueArgs, kind, id, row.id, doc.number, 'demo-admin'))
+      }
     }
     statements.push(db.prepare(`UPDATE ${kind} SET status = 'POSTED', posted_at = unixepoch() * 1000, updated_at = unixepoch() * 1000 WHERE organization_id = ? AND id = ? AND status = 'DRAFT' AND revision = ?`).bind(org, id, doc.revision))
     statements.push(db.prepare('INSERT INTO audit_log (id, organization_id, document_type, document_id, action, actor_id) VALUES (?, ?, ?, ?, ?, ?)').bind(crypto.randomUUID(), org, kind, id, 'POST', 'demo-admin'))

@@ -8,6 +8,9 @@ import { inventoryRoutes } from './routes/inventory-routes'
 import { createDocumentRoutes } from './routes/document-routes'
 import { movementRoutes } from './routes/movement-routes'
 import { supplierRoutes } from './routes/supplier-routes'
+import { customerRoutes } from './routes/customer-routes'
+import { salesRoutes, saleReturnRoutes } from './routes/sales-routes'
+import { dashboardRoutes } from './routes/dashboard-routes'
 import { errorHandler } from './middleware/error-handler'
 import type { Bindings } from './types'
 
@@ -26,5 +29,9 @@ app.route('/api/writeoffs', createDocumentRoutes('writeoffs'))
 app.route('/api/transfers', createDocumentRoutes('transfers'))
 app.route('/api/stock-movements', movementRoutes)
 app.route('/api/suppliers', supplierRoutes)
+app.route('/api/customers', customerRoutes)
+app.route('/api/sales', salesRoutes)
+app.route('/api/sale-returns', saleReturnRoutes)
+app.route('/api/dashboard', dashboardRoutes)
 
 export default app
