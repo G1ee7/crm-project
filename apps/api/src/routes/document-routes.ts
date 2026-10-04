@@ -77,6 +77,7 @@ function translateFailure(error: unknown): never {
   if (error instanceof ApiError) throw error
   const message = String(error)
   if (message.includes('INSUFFICIENT_STOCK')) throw new ApiError('INSUFFICIENT_STOCK', 'Недостаточно доступного остатка на складе', 409)
+  if (message.includes('INVALID_STOCK_VALUE')) throw new ApiError('INVALID_STOCK_VALUE', 'Превышен допустимый предел стоимости остатка', 409)
   if (message.includes('DOCUMENT_CHANGED') || message.includes('document_finalizations_org_doc_uq') || message.includes('document_finalizations.organization_id')) throw new ApiError('DOCUMENT_CHANGED', 'Документ уже проведён, отменён или изменён другим запросом', 409)
   if (message.includes('MOVEMENT_REQUIRES_POST')) throw new ApiError('DOCUMENT_CHANGED', 'Проведение документа не подтверждено', 409)
   if (message.includes('FOREIGN KEY constraint failed')) throw new ApiError('REFERENCE_CHANGED', 'Связанный товар или склад изменился', 409)
