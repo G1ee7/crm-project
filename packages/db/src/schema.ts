@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm'
-import { foreignKey, index, integer, real, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
+import { check, foreignKey, index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 
 const timestamps = {
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
@@ -20,21 +20,25 @@ export const users = sqliteTable('users', {
   email: text('email').notNull(),
   role: text('role').notNull().default('admin'),
   ...timestamps,
-}, (table) => [uniqueIndex('users_org_email_uq').on(table.organizationId, table.email)])
+}, (table) => [uniqueIndex('users_org_email_uq').on(table.organizationId, table.email), uniqueIndex('users_org_id_uq').on(table.organizationId, table.id)])
 
 export const warehouses = sqliteTable('warehouses', {
   id: text('id').primaryKey(),
   organizationId: text('organization_id').notNull().references(() => organizations.id),
   name: text('name').notNull(),
+  code: text('code').notNull().default(''),
+  address: text('address'),
+  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
   city: text('city'),
   isDefault: integer('is_default', { mode: 'boolean' }).notNull().default(false),
   ...timestamps,
-}, (table) => [uniqueIndex('warehouses_org_id_uq').on(table.organizationId, table.id)])
+}, (table) => [uniqueIndex('warehouses_org_id_uq').on(table.organizationId, table.id), uniqueIndex('warehouses_org_code_uq').on(table.organizationId, table.code)])
 
 export const categories = sqliteTable('categories', {
   id: text('id').primaryKey(),
   organizationId: text('organization_id').notNull().references(() => organizations.id),
   name: text('name').notNull(),
+  description: text('description'),
   ...timestamps,
 }, (table) => [uniqueIndex('categories_org_id_uq').on(table.organizationId, table.id)])
 
@@ -46,12 +50,16 @@ export const products = sqliteTable('products', {
   sku: text('sku').notNull(),
   description: text('description'),
   imageKey: text('image_key'),
-  retailPrice: integer('retail_price').notNull().default(0),
+  purchasePrice: integer('purchase_price').notNull().default(0),
+  salePrice: integer('sale_price').notNull().default(0),
+  unit: text('unit').notNull().default('шт.'),
   minimumStock: integer('minimum_stock').notNull().default(0),
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
   ...timestamps,
 }, (table) => [
   uniqueIndex('products_org_sku_uq').on(table.organizationId, table.sku),
+  index('products_org_category_idx').on(table.organizationId, table.categoryId),
+  index('products_org_name_idx').on(table.organizationId, table.name),
   uniqueIndex('products_org_id_uq').on(table.organizationId, table.id),
   foreignKey({ columns: [table.organizationId, table.categoryId], foreignColumns: [categories.organizationId, categories.id] }),
 ])
@@ -64,6 +72,7 @@ export const productBarcodes = sqliteTable('product_barcodes', {
   ...timestamps,
 }, (table) => [
   uniqueIndex('barcodes_org_barcode_uq').on(table.organizationId, table.barcode),
+  index('barcodes_org_product_idx').on(table.organizationId, table.productId),
   foreignKey({ columns: [table.organizationId, table.productId], foreignColumns: [products.organizationId, products.id] }),
 ])
 
@@ -74,7 +83,7 @@ export const suppliers = sqliteTable('suppliers', {
   bin: text('bin'),
   phone: text('phone'),
   ...timestamps,
-}, (table) => [index('suppliers_org_idx').on(table.organizationId)])
+}, (table) => [index('suppliers_org_idx').on(table.organizationId), uniqueIndex('suppliers_org_id_uq').on(table.organizationId, table.id)])
 
 export const stockBalances = sqliteTable('stock_balances', {
   id: text('id').primaryKey(),
@@ -86,6 +95,7 @@ export const stockBalances = sqliteTable('stock_balances', {
   ...timestamps,
 }, (table) => [
   uniqueIndex('balances_org_product_warehouse_uq').on(table.organizationId, table.productId, table.warehouseId),
+  index('balances_org_warehouse_idx').on(table.organizationId, table.warehouseId),
   foreignKey({ columns: [table.organizationId, table.productId], foreignColumns: [products.organizationId, products.id] }),
   foreignKey({ columns: [table.organizationId, table.warehouseId], foreignColumns: [warehouses.organizationId, warehouses.id] }),
 ])
@@ -95,9 +105,12 @@ export const stockMovements = sqliteTable('stock_movements', {
   organizationId: text('organization_id').notNull().references(() => organizations.id),
   productId: text('product_id').notNull(),
   warehouseId: text('warehouse_id').notNull(),
-  type: text('type', { enum: ['RECEIPT', 'SALE', 'RETURN', 'WRITEOFF', 'TRANSFER_IN', 'TRANSFER_OUT', 'ADJUSTMENT'] }).notNull(),
+  type: text('type', { enum: ['RECEIPT', 'ISSUE', 'WRITEOFF', 'TRANSFER_IN', 'TRANSFER_OUT', 'SALE', 'RETURN', 'ADJUSTMENT'] }).notNull(),
   quantityDelta: integer('quantity_delta').notNull(),
-  unitCost: real('unit_cost'),
+  unitCostMinor: integer('unit_cost_minor'),
+  documentType: text('document_type'),
+  documentId: text('document_id'),
+  documentItemId: text('document_item_id'),
   referenceId: text('reference_id'),
   note: text('note'),
   createdBy: text('created_by'),
@@ -105,7 +118,146 @@ export const stockMovements = sqliteTable('stock_movements', {
 }, (table) => [
   index('movements_org_created_idx').on(table.organizationId, table.createdAt),
   index('movements_org_product_idx').on(table.organizationId, table.productId),
+  index('movements_org_doc_idx').on(table.organizationId, table.documentType, table.documentId),
+  uniqueIndex('movements_doc_item_type_uq').on(table.organizationId, table.documentType, table.documentId, table.documentItemId, table.type),
   foreignKey({ columns: [table.organizationId, table.productId], foreignColumns: [products.organizationId, products.id] }),
   foreignKey({ columns: [table.organizationId, table.warehouseId], foreignColumns: [warehouses.organizationId, warehouses.id] }),
   foreignKey({ columns: [table.organizationId, table.createdBy], foreignColumns: [users.organizationId, users.id] }),
+])
+
+const documentFields = () => ({
+  id: text('id').primaryKey(),
+  organizationId: text('organization_id').notNull().references(() => organizations.id),
+  number: text('number').notNull(),
+  status: text('status', { enum: ['DRAFT', 'POSTED', 'CANCELLED'] }).notNull().default('DRAFT'),
+  comment: text('comment'),
+  createdBy: text('created_by').notNull(),
+  revision: integer('revision').notNull().default(1),
+  postedAt: integer('posted_at', { mode: 'timestamp_ms' }),
+  ...timestamps,
+})
+
+export const receipts = sqliteTable('receipts', {
+  ...documentFields(),
+  warehouseId: text('warehouse_id').notNull(),
+  supplierId: text('supplier_id'),
+}, table => [
+  uniqueIndex('receipts_org_number_uq').on(table.organizationId, table.number),
+  uniqueIndex('receipts_org_id_uq').on(table.organizationId, table.id),
+  index('receipts_org_created_idx').on(table.organizationId, table.createdAt),
+  foreignKey({ columns: [table.organizationId, table.warehouseId], foreignColumns: [warehouses.organizationId, warehouses.id] }),
+  foreignKey({ columns: [table.organizationId, table.supplierId], foreignColumns: [suppliers.organizationId, suppliers.id] }),
+  foreignKey({ columns: [table.organizationId, table.createdBy], foreignColumns: [users.organizationId, users.id] }),
+])
+
+export const issues = sqliteTable('issues', {
+  ...documentFields(),
+  warehouseId: text('warehouse_id').notNull(),
+}, table => [
+  uniqueIndex('issues_org_number_uq').on(table.organizationId, table.number),
+  uniqueIndex('issues_org_id_uq').on(table.organizationId, table.id),
+  index('issues_org_created_idx').on(table.organizationId, table.createdAt),
+  foreignKey({ columns: [table.organizationId, table.warehouseId], foreignColumns: [warehouses.organizationId, warehouses.id] }),
+  foreignKey({ columns: [table.organizationId, table.createdBy], foreignColumns: [users.organizationId, users.id] }),
+])
+
+export const writeoffs = sqliteTable('writeoffs', {
+  ...documentFields(),
+  warehouseId: text('warehouse_id').notNull(),
+  reason: text('reason').notNull(),
+}, table => [
+  uniqueIndex('writeoffs_org_number_uq').on(table.organizationId, table.number),
+  uniqueIndex('writeoffs_org_id_uq').on(table.organizationId, table.id),
+  index('writeoffs_org_created_idx').on(table.organizationId, table.createdAt),
+  foreignKey({ columns: [table.organizationId, table.warehouseId], foreignColumns: [warehouses.organizationId, warehouses.id] }),
+  foreignKey({ columns: [table.organizationId, table.createdBy], foreignColumns: [users.organizationId, users.id] }),
+])
+
+export const transfers = sqliteTable('transfers', {
+  ...documentFields(),
+  fromWarehouseId: text('from_warehouse_id').notNull(),
+  toWarehouseId: text('to_warehouse_id').notNull(),
+}, table => [
+  uniqueIndex('transfers_org_number_uq').on(table.organizationId, table.number),
+  uniqueIndex('transfers_org_id_uq').on(table.organizationId, table.id),
+  index('transfers_org_created_idx').on(table.organizationId, table.createdAt),
+  check('transfers_distinct_warehouses_ck', sql`${table.fromWarehouseId} <> ${table.toWarehouseId}`),
+  foreignKey({ columns: [table.organizationId, table.fromWarehouseId], foreignColumns: [warehouses.organizationId, warehouses.id] }),
+  foreignKey({ columns: [table.organizationId, table.toWarehouseId], foreignColumns: [warehouses.organizationId, warehouses.id] }),
+  foreignKey({ columns: [table.organizationId, table.createdBy], foreignColumns: [users.organizationId, users.id] }),
+])
+
+const itemFields = () => ({
+  id: text('id').primaryKey(),
+  organizationId: text('organization_id').notNull().references(() => organizations.id),
+  productId: text('product_id').notNull(),
+  quantity: integer('quantity').notNull(),
+})
+
+export const receiptItems = sqliteTable('receipt_items', {
+  ...itemFields(), receiptId: text('receipt_id').notNull(), unitCostMinor: integer('unit_cost_minor').notNull(),
+}, table => [
+  uniqueIndex('receipt_items_org_doc_product_uq').on(table.organizationId, table.receiptId, table.productId),
+  check('receipt_items_quantity_ck', sql`${table.quantity} > 0`),
+  check('receipt_items_cost_ck', sql`${table.unitCostMinor} >= 0`),
+  foreignKey({ columns: [table.organizationId, table.receiptId], foreignColumns: [receipts.organizationId, receipts.id] }),
+  foreignKey({ columns: [table.organizationId, table.productId], foreignColumns: [products.organizationId, products.id] }),
+])
+
+export const issueItems = sqliteTable('issue_items', {
+  ...itemFields(), issueId: text('issue_id').notNull(),
+}, table => [
+  uniqueIndex('issue_items_org_doc_product_uq').on(table.organizationId, table.issueId, table.productId),
+  check('issue_items_quantity_ck', sql`${table.quantity} > 0`),
+  foreignKey({ columns: [table.organizationId, table.issueId], foreignColumns: [issues.organizationId, issues.id] }),
+  foreignKey({ columns: [table.organizationId, table.productId], foreignColumns: [products.organizationId, products.id] }),
+])
+
+export const writeoffItems = sqliteTable('writeoff_items', {
+  ...itemFields(), writeoffId: text('writeoff_id').notNull(),
+}, table => [
+  uniqueIndex('writeoff_items_org_doc_product_uq').on(table.organizationId, table.writeoffId, table.productId),
+  check('writeoff_items_quantity_ck', sql`${table.quantity} > 0`),
+  foreignKey({ columns: [table.organizationId, table.writeoffId], foreignColumns: [writeoffs.organizationId, writeoffs.id] }),
+  foreignKey({ columns: [table.organizationId, table.productId], foreignColumns: [products.organizationId, products.id] }),
+])
+
+export const transferItems = sqliteTable('transfer_items', {
+  ...itemFields(), transferId: text('transfer_id').notNull(),
+}, table => [
+  uniqueIndex('transfer_items_org_doc_product_uq').on(table.organizationId, table.transferId, table.productId),
+  check('transfer_items_quantity_ck', sql`${table.quantity} > 0`),
+  foreignKey({ columns: [table.organizationId, table.transferId], foreignColumns: [transfers.organizationId, transfers.id] }),
+  foreignKey({ columns: [table.organizationId, table.productId], foreignColumns: [products.organizationId, products.id] }),
+])
+
+export const documentCounters = sqliteTable('document_counters', {
+  organizationId: text('organization_id').notNull().references(() => organizations.id),
+  documentType: text('document_type').notNull(),
+  lastNumber: integer('last_number').notNull().default(0),
+}, table => [uniqueIndex('document_counters_org_type_uq').on(table.organizationId, table.documentType)])
+
+export const documentFinalizations = sqliteTable('document_finalizations', {
+  id: text('id').primaryKey(),
+  organizationId: text('organization_id').notNull().references(() => organizations.id),
+  documentType: text('document_type').notNull(),
+  documentId: text('document_id').notNull(),
+  action: text('action', { enum: ['POST', 'CANCEL'] }).notNull(),
+  expectedRevision: integer('expected_revision').notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
+}, table => [uniqueIndex('document_finalizations_org_doc_uq').on(table.organizationId, table.documentType, table.documentId)])
+
+export const auditLog = sqliteTable('audit_log', {
+  id: text('id').primaryKey(),
+  organizationId: text('organization_id').notNull().references(() => organizations.id),
+  documentType: text('document_type').notNull(),
+  documentId: text('document_id').notNull(),
+  action: text('action').notNull(),
+  actorId: text('actor_id').notNull(),
+  details: text('details'),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
+}, table => [
+  index('audit_org_created_idx').on(table.organizationId, table.createdAt),
+  index('audit_org_doc_idx').on(table.organizationId, table.documentType, table.documentId),
+  foreignKey({ columns: [table.organizationId, table.actorId], foreignColumns: [users.organizationId, users.id] }),
 ])
