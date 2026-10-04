@@ -13,7 +13,8 @@
     "db:generate": "npm run db:generate -w @warehouse/db",
     "db:migrate:local": "npm run db:migrate:local -w @warehouse/api",
     "test:api": "node scripts/verify-catalog.mjs && node scripts/verify-documents.mjs",
-    "measure:api": "node scripts/measure-api.mjs"
+    "measure:api": "node scripts/measure-api.mjs",
+    "check:stock": "node scripts/check-stock-integrity.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",
